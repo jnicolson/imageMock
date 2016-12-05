@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	m "jarl/middleware"
 	"log"
 	"net/http"
 	"strconv"
@@ -34,7 +33,7 @@ func main() {
 	router.GET("/", mainHandler)
 	router.GET("/:size", imageHandler)
 
-	loggedRouter := m.LogMiddleware(router)
+	loggedRouter := LogMiddleware(router)
 
 	log.Printf("Starting to serve on port %s", *port)
 	err := http.ListenAndServe(":"+*port, loggedRouter)
