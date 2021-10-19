@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/go-chi/chi/v5"
 	"github.com/namsral/flag"
 )
 
@@ -29,9 +29,9 @@ func main() {
 	im.setFont(*fontfile)
 	im.setDpi(*dpi)
 
-	router := httprouter.New()
-	router.GET("/", mainHandler)
-	router.GET("/:size", imageHandler)
+	router := chi.NewRouter()
+	router.Get("/", Index)
+	router.Get("/{size}", imageHandler)
 
 	loggedRouter := LogMiddleware(router)
 
@@ -44,16 +44,15 @@ func main() {
 
 }
 
-func mainHandler(rw http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	params := []httprouter.Param{}
-	param := httprouter.Param{Key: "size", Value: "800x600"}
-	params = append(params, param)
+func Index(w http.ResponseWriter, r *http.Request) {
+	rctx := chi.RouteContext(r.Context())
+	rctx.URLParams.Add("size", "800x600")
 
-	imageHandler(rw, req, params)
+	imageHandler(w, r)
 }
 
-func imageHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	size := params.ByName("size")
+func imageHandler(w http.ResponseWriter, r *http.Request) {
+	size := chi.URLParam(r, "size")
 
 	if size == "favicon.ico" {
 		return
@@ -71,7 +70,7 @@ func imageHandler(rw http.ResponseWriter, req *http.Request, params httprouter.P
 	}
 
 	if err != nil {
-		fmt.Fprintf(rw, "Could not parse size")
+		fmt.Fprintf(w, "Could not parse size")
 		return
 	}
 
@@ -81,9 +80,9 @@ func imageHandler(rw http.ResponseWriter, req *http.Request, params httprouter.P
 		log.Fatal("Could not generate image")
 	}
 
-	rw.Header().Set("Content-Type", "image/jpeg")
-	rw.Header().Set("Content-Length", strconv.Itoa(len(image.Bytes())))
-	if _, err := rw.Write(image.Bytes()); err != nil {
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", strconv.Itoa(len(image.Bytes())))
+	if _, err := w.Write(image.Bytes()); err != nil {
 		log.Println("Unable to write image")
 	}
 
